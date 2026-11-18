@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/recall.schema.json",
+  "title": "RecallQuery / RecallResult + provenance",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bank_id": {
+          "type": "string"
+        },
+        "principal": {
+          "type": "string"
+        },
+        "query": {
+          "type": "string"
+        },
+        "token_budget": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "valid_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "channels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "semantic",
+              "bm25",
+              "graph",
+              "temporal"
+            ]
+          }
+        }
+      },
+      "required": [
+        "bank_id",
+        "principal",
+        "query",
+        "token_budget"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "channel_hits": {
+          "type": "object"
+        },
+        "reranked": {
+          "type": "boolean"
+        },
+        "token_used": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "contract_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "items",
+        "channel_hits",
+        "reranked",
+        "token_used",
+        "contract_version"
+      ]
+    }
+  },
+  "required": [
+    "query",
+    "result"
+  ],
+  "x-note": "四路检索是四个可独立装卸的插件，融合策略是第五个；合并语义声明式，不靠加载顺序"
+}

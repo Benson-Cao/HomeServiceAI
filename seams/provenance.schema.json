@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/provenance.schema.json",
+  "title": "Provenance（7 字段，每条记忆必带）",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "producer_plugin_id": {
+      "type": "string"
+    },
+    "pipeline_run_id": {
+      "type": "string"
+    },
+    "contract_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "model_id": {
+      "type": "string"
+    },
+    "embedding_dim": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "quantization_version": {
+      "type": "string"
+    },
+    "evidence": {
+      "$ref": "evidence.schema.json"
+    }
+  },
+  "required": [
+    "producer_plugin_id",
+    "pipeline_run_id",
+    "contract_version",
+    "model_id",
+    "embedding_dim",
+    "quantization_version",
+    "evidence"
+  ],
+  "x-note": "embedding_dim / quantization_version 变更时旧向量必须隔离或拒检，防静默降质（不报错、只变差）"
+}

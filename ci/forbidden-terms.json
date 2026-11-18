@@ -1,0 +1,51 @@
+{
+  "note": "内核破功判据的唯一数据源。本文件位于 ci/，自身被检查脚本排除。",
+  "scene": [
+    "work",
+    "kid",
+    "health",
+    "home",
+    "/work\\.profile/",
+    "/kid\\.profile/",
+    "/health\\.profile/",
+    "/home\\.profile/"
+  ],
+  "model-provider-brand": [
+    "Hindsight",
+    "MemOS",
+    "pgvector",
+    "Milvus",
+    "OpenAI",
+    "Anthropic",
+    "Ollama",
+    "vLLM",
+    "llama.cpp",
+    "LM Studio",
+    "LiteLLM",
+    "Cross-Encoder",
+    "BM25",
+    "HNSW",
+    "fnOS",
+    "群晖",
+    "极空间"
+  ],
+  "deployment-channel": [
+    "isCloud",
+    "isLocal",
+    "cloudApi",
+    "localModel",
+    "isOffline",
+    "apiBaseUrl",
+    "/process\\.env\\.[A-Z_]*(API|TOKEN|URL|KEY)/"
+  ],
+  "retrieval-strategy": [
+    "rrfWeight",
+    "fusionWeight",
+    "topKByChannel",
+    "rerankScore"
+  ],
+  "scene-auth-branch": [
+    "/if\\s*\\(.*scene\\s*===/",
+    "/if\\s*\\(.*bank\\s*===\\s*'/"
+  ]
+}

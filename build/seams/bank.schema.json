@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/bank.schema.json",
+  "title": "Bank（一等公民隔离域）",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "bank_id": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "mission": {
+      "type": "string"
+    },
+    "directives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "retention_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "share_scope": {
+      "type": "string",
+      "enum": [
+        "private",
+        "family-read",
+        "family-write",
+        "explicit-grant"
+      ]
+    },
+    "acl": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "contract_version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "bank_id",
+    "owner",
+    "share_scope"
+  ],
+  "x-note": "bank URL ≠ 授权；每次 retain/recall 前内核强制 principal → bank → operation"
+}

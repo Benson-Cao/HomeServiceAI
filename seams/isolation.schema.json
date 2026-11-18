@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/isolation.schema.json",
+  "title": "IsolationScope",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "principal": {
+      "type": "string"
+    },
+    "bank": {
+      "type": "string"
+    },
+    "scene": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tag": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "record": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "level": {
+      "type": "string",
+      "enum": [
+        "principal",
+        "bank",
+        "scene",
+        "record"
+      ]
+    }
+  },
+  "required": [
+    "principal",
+    "bank",
+    "level"
+  ],
+  "x-note": "ABAC 执行点在 L2 isolation-policy；profile 只装配不授权"
+}

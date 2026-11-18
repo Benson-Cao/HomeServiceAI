@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/sync.schema.json",
+  "title": "SyncCursor / Job",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sync_cursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "watermark": {
+          "type": "string"
+        },
+        "fingerprint": {
+          "type": "string"
+        },
+        "last_synced_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "ingest",
+            "downstream",
+            "bidirectional"
+          ]
+        }
+      },
+      "required": [
+        "source_id",
+        "watermark",
+        "fingerprint",
+        "last_synced_at",
+        "direction"
+      ]
+    },
+    "job": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "job_id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "extract",
+            "consolidate",
+            "precompute",
+            "sync"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "succeeded",
+            "failed",
+            "dead-letter"
+          ]
+        },
+        "attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accepted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "visible_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "contract_version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "job_id",
+        "kind",
+        "state",
+        "attempts",
+        "accepted_at",
+        "contract_version"
+      ]
+    }
+  },
+  "required": [
+    "sync_cursor",
+    "job"
+  ],
+  "x-note": "幂等由 SyncCursor + dedupe_fingerprint + Job 状态机保证，不是 L1 内核原语"
+}

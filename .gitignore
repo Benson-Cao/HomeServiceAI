@@ -1,0 +1,9 @@
+node_modules/
+build/
+tsconfig.build.json
+dist/
+.env
+*.log
+.DS_Store
+lib/node_modules/
+bin/

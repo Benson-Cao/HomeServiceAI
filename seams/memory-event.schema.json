@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/memory-event.schema.json",
+  "title": "MemoryEvent",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "principal": {
+      "type": "string"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source": {
+      "type": "string"
+    },
+    "scene": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "content": {
+      "type": "string"
+    },
+    "raw_pointer": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "dedupe_fingerprint": {
+      "type": "string"
+    },
+    "sync_cursor": {
+      "$ref": "sync.schema.json#/properties/sync_cursor"
+    },
+    "contract_version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "principal",
+    "occurred_at",
+    "recorded_at",
+    "source",
+    "content",
+    "dedupe_fingerprint",
+    "contract_version"
+  ],
+  "x-note": "原件留在 NAS；记忆库只存结构化事实 + 统一元数据"
+}

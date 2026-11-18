@@ -1,0 +1,21 @@
+name: contracts-and-kernel
+
+on:
+  pull_request:
+    paths: ['seams/**', 'src/**', 'ci/**', 'tests/**', 'examples/**', 'package.json', 'tsconfig.json', '.github/**']
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: install build toolchain
+        run: npm install --no-audit --no-fund
+      - name: contracts + kernel + V0.5 acceptance
+        run: npm run verify
+      - name: dump-tree diagnostics
+        run: npm run dump:tree

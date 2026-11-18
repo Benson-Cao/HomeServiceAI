@@ -1,0 +1,37 @@
+{
+  "name": "@memory-harness/contracts",
+  "version": "1.2.0",
+  "description": "Frozen vocabulary and seam contracts for Memory Harness (no kernel implementation)",
+  "type": "module",
+  "license": "MIT",
+  "private": false,
+  "files": [
+    "seams/",
+    "src/",
+    "ci/",
+    "docs/",
+    "tests/",
+    "examples/",
+    ".github/",
+    "CONTRACTS.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node ci/build.mjs",
+    "check:schemas": "node ci/check-schemas.mjs",
+    "check:kernel": "node ci/kernel-purity.mjs --dir src/kernel",
+    "test": "node --test tests/*.test.mjs",
+    "dump:tree": "node build/src/kernel/cli.js --dump-tree",
+    "acceptance": "node --test tests/acceptance.test.mjs   # 单独跑 12 项验收；npm test 已包含",
+    "verify": "npm run check:schemas && npm run build && npm run check:kernel && npm test",
+    "governance": "node --test tests/governance.test.mjs",
+    "stack": "node --test tests/v07-full-stack.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "typescript": "^5.6.3"
+  }
+}

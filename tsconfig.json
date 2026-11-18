@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "declaration": true,
+    "outDir": "build",
+    "rootDir": ".",
+    "lib": [
+      "ES2022"
+    ],
+    "skipLibCheck": true,
+    "noEmitOnError": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": [
+    "seams/**/*.ts",
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "build",
+    "node_modules",
+    "tests",
+    "ci"
+  ]
+}

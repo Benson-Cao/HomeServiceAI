@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-harness.local/schemas/operations.schema.json",
+  "title": "Retain / Recall / Reflect 契约",
+  "contract_version": "1.2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "retain": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "$ref": "memory-event.schema.json"
+        },
+        "result": {
+          "type": "object"
+        }
+      }
+    },
+    "recall": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "$ref": "recall.schema.json"
+        },
+        "result": {
+          "type": "object"
+        }
+      }
+    },
+    "reflect": {
+      "type": "object",
+      "properties": {
+        "request": {
+          "type": "object"
+        },
+        "result": {
+          "type": "object"
+        }
+      }
+    }
+  },
+  "required": [
+    "retain",
+    "recall",
+    "reflect"
+  ],
+  "x-note": "Reflect 在 V0.5 只定义契约、不实现；见 seam-registry.json 的 v05_status"
+}
