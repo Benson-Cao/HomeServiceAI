@@ -1,6 +1,6 @@
 # 图 ↔ ADR ↔ contract_version 映射
 
-`CONTRACT_VERSION = 1.2.0`（对齐架构图 v1.2 / ADR v1.2）。
+`CONTRACT_VERSION = 1.2.0`（对齐架构图 v1.2 / ADR v1.3，含 ADR-006）。
 
 | 契约文件 | 架构图落点 | ADR 依据 |
 |---|---|---|
@@ -17,7 +17,7 @@
 | `src/kernel/runtime.ts` / `cli.ts` | L1 五件事 + `dumpTree` PENDING 诊断 | 前置共识 1/3、ADR-002、禁止清单 |
 | `src/providers/*` | L3 默认 provider 候选（各 seam 两个可互换实现） | ADR-001 双通道、ADR-006 进程边界 |
 | `src/scenes/memory-scene.ts` | 场景插件：retain/recall 闭环、静默降质拦截、归档不删 | ADR v1.2 必验 4 条、前置共识 2 |
-| `src/runtime/stubs.ts` | V0.5 降级项留桩（sync / consolidator / expiry） | ADR v1.2 降级验收集 |
+| ~~`src/runtime/stubs.ts`~~ | V0.5 桩已于 V0.7 删除，32 seam 全量实现见 `src/profiles/bindings.ts` | ADR-004 / V0.7 实践记录 |
 | `tests/acceptance.test.mjs` | 8 条运行时语义 + 必验 4 条脚本化 | ADR「运行时语义验收清单」 |
 | `src/providers/consolidator.ts` · `conflict.ts` · `expiry.ts` | L2 `consolidator` / `conflict` / `expiry` seam 的真实实现（各 2 个可互换） | 前置共识 2、ADR v1.2 横切⑦ |
 | `tests/governance.test.mjs` | 证据累积 / 矛盾修正 / 过期归档 / 事件可观测 / 归档不删 | ADR「冲突与过期策略」 |
@@ -86,7 +86,7 @@
 - 未动 `seams/*.ts`、未动任何 `*.schema.json`、未动 `CONTRACT_VERSION`（仍 `1.2.0`）、未动架构图 v1.2、未开新 ADR。
 - `src/kernel/runtime.ts` 只新增 3 个事件白名单名（`memory.consolidation.strengthened` / `memory.conflict.revised` / `memory.expiry.archived`），属运行时词汇扩展，**不是契约字段**，纯度检查仍 PASS。
 - `src/pipeline/types.ts` 是本地实现类型（非 `seams/` 契约源），随实现扩展。
-- `git diff` 主体落在 `src/providers/` · `src/scenes/` · `src/profiles/` · `src/runtime/stubs.ts` · `tests/` · `seam-registry.json` 的 `v05_status` → **判定 A 档，直接合**。
+- `git diff` 主体落在 `src/providers/` · `src/scenes/` · `src/profiles/` · `src/runtime/stubs.ts`（**该文件已于 V0.7 删除**） · `tests/` · `seam-registry.json` 的 `v05_status` → **判定 A 档，直接合**。
 
 备注（非技术债、不阻塞）：事件白名单目前定义在 `src/kernel/runtime.ts`。若日后需要跨进程共享事件词汇表，应下沉到 `seams/` 并走 MINOR；当前单进程内核无需提前引入。
 
@@ -108,3 +108,32 @@
 **实现期抓到的真实缺陷**：① 系统 provider 接口定义在 `src/providers/system.ts`，场景插件 import 不到 → 归位到 `pipeline/types.ts`；② TS strict 嵌套闭包收窄丢失 → 非空别名；③ 批量替换把 `enq.accepted` 误伤为 `enqRef.accepted`；④ 融合结果 `channel` 被末次写入覆盖 → 改为保留贡献最大的一路；⑤ 两处测试用例自身构造错误（对称名次、得分数组比较）。
 
 **备注仍然成立**：事件白名单定义在 `src/kernel/runtime.ts`，单进程内核无需下沉 `seams/`；若日后跨进程共享事件词汇表，按 B 档 MINOR 处理。
+
+## V0.8 评审回归（2026-11-18，A 档）
+
+外部评审在 **Windows / Node 22** 实测发现：文档写「49/49」，但 `npm run verify` 第一步 `check:schemas` 就 ENOENT，根本没跑到测试。根因是本仓库所有检查只在同一台 Linux 沙盒跑过、CI 也只有 `ubuntu-latest`，**跨平台从未验证**。同一轮还复现出 ⓗ 依赖真实 UTC 时钟（沙盒 UTC 04:11 落在夜间窗口内，基线变成 48/49）。
+
+**阻断级修复**
+
+| 位置 | 修复 |
+|---|---|
+| `ci/check-schemas.mjs` | `dir.pathname` → `fileURLToPath(dir)`，消除 Windows 双盘符路径 |
+| `ci/build.mjs` | 只定位 `typescript/lib/tsc.js` 纯 JS 入口，**永不把 `.bin/tsc` 交给 node**（Windows 下那是 shell 脚本）；`NODE_PATH` 分隔符按平台取 `;` / `:` |
+| `package.json` / `.npmignore` | `files` 加 `build/`；新增 `pretest` / `preacceptance` / `pregovernance` / `prestack` / `predump:tree` / `prepack` 自动构建；`.npmignore` 明确不排除 `build/`。`npm pack` 从 61 文件 → 139 文件、含 78 个 `build/` 条目 |
+| `.github/workflows/kernel-purity.yml` | `matrix.os: [ubuntu-latest, windows-latest]`，让同类回归不再只靠人工发现 |
+
+**三个真实逻辑缺陷（均有用例复现）**
+
+1. `src/providers/defense.ts`：模块级共享 `/g` 正则被 `.test()` 推进 `lastIndex`，连续扫描第二条 PII 漏检 → 规则只存 pattern 源码，每次现场 `new RegExp`。`tests/regressions.test.mjs` R1。
+2. `src/providers/sync.ts`：`resumableSync.restore()` 只改私有 `state`，`cursor / downstream / buffered / lagMs` 仍委托 `inMemorySync` 闭包 → 恢复后全是空值；且按整批 `accepted > 0` 把 duplicate 写进快照 → 重写为自包含状态、逐条按指纹去重。`tests/regressions.test.mjs` R3 / R4。
+3. `src/providers/consolidator.ts`：相同性看原始 `dedupe_fingerprint`、冲突看 `normalized()`，口径不一致 → `"Hello  World"` vs `"hello world"` 判 `new`；统一为 `normalized()`。`tests/regressions.test.mjs` R5 / R6。
+
+**时钟解耦**：ⓗ 用 `bindings({scheduler})` 注入恒开 / 恒关两个变体，不再依赖 `nightBatchScheduler` 的真实 UTC 小时；`nightBatchScheduler` 自身由 R7 用固定时刻字符串验收。
+
+**文档与口径**：`CONTRACTS.md` 头部 ADR 版本统一 v1.3；`src/runtime/stubs.ts` 两处残留标注删除；`tests/acceptance.test.mjs` 过时文案 `V0.5 不实现 reflect` 改为「Reflect 已实现，但 authorize 仍由 L2 策略裁决」；`assemble()` 删除死参数 `withStubs`；README 纠正「随包提供 build/，只跑 npm test 无需安装」的错误承诺，并澄清 **32 seam 全部装配 / 可 resolve / 有行为验收，其中 26 个进入主链路，6 个外围接入 seam 由外部消费方调用**（不再声称「32 seam 全接入主链路」）。
+
+**分档自查**：全部改动落在 `ci/` · `package.json` · `.npmignore` · `.github/` · `src/providers/` · `src/runtime/assemble.ts` · `tests/` · `README.md` · `CONTRACTS.md`。未动 `seams/*.ts`、未动 `*.schema.json`、未动 `CONTRACT_VERSION`（仍 `1.2.0`）、未动架构图 v1.2、未开新 ADR → **A 档**。
+
+**最终验收**：`npm run verify` **56/56**（内核 15 / 换 provider 4 / 横切 12 / 治理 7 / 全栈 11 / 评审回归 7），内核破功违例注入 FAIL→删除 PASS，`CONTRACT_VERSION` 仍 `1.2.0`。
+
+**盲区声明**：本次修复在 Linux 沙盒内用「构造 Windows file URL」与「把 `.bin/tsc` 替换为 shell 脚本」两种方式回归，**没有在真实 Windows 机器上跑过**；Windows 覆盖交由 push 后的 Actions matrix 验证，不以模拟结果冒充跨平台实测。

@@ -10,6 +10,7 @@ import { assemble } from '../build/src/runtime/assemble.js'
 import { attributePolicy } from '../build/src/providers/policy.js'
 import { weightedRrf } from '../build/src/providers/fusion.js'
 import { CHANNEL_WEIGHTS } from '../build/src/scenes/memory-scene.js'
+import { bindings } from '../build/src/profiles/bindings.js'
 
 const settle = async () => { await new Promise((r) => setImmediate(r)); await new Promise((r) => setImmediate(r)) }
 const retain = (svc, c, extra = {}) => svc.retain({ principal: 'u1', bank_id: 'b1', content: c, ...extra })
@@ -137,8 +138,16 @@ test('ⓖ Reflect：综合结论带来源与置信度，走 llm seam', async () 
   assert.notEqual(runs[0].synthesis, runs[1].synthesis, '不同 llm provider 产出不同')
 })
 
-test('ⓗ 心智模型预计算：显式驱动 + 批处理窗口自动触发', async () => {
-  const app = assemble(profileA) // alwaysOnScheduler
+test('ⓗ 心智模型预计算：批处理窗口与显式驱动（注入可控 scheduler，不依赖真实 UTC）', async () => {
+  // 窗口恒开 / 恒关两个变体：与真实时钟、真实 profile 的夜间窗口完全解耦
+  const clockAlways = { name: 'clock-always', providers: bindings({
+    'scheduler': () => ({ kind: 'always-on-test', inBatchWindow: () => true, nextWindow: (n) => n }),
+  }) }
+  const clockNever = { name: 'clock-never', providers: bindings({
+    'scheduler': () => ({ kind: 'never-test', inBatchWindow: () => false, nextWindow: (n) => n }),
+  }) }
+
+  const app = assemble(clockAlways)
   retain(app.service, '预计算素材 one')
   retain(app.service, '预计算素材 two')
   await settle(); app.service.drain()
@@ -150,10 +159,11 @@ test('ⓗ 心智模型预计算：显式驱动 + 批处理窗口自动触发', a
   assert.equal(app.service.precompute(), 0, '已预计算的不再重复')
   app.dispose()
 
-  const appB = assemble(profileB) // nightBatchScheduler
+  const appB = assemble(clockNever)
   retain(appB.service, '批处理窗口素材')
   await settle(); appB.service.drain()
-  assert.equal(typeof appB.service.stats.batchWindow, 'boolean')
+  assert.equal(appB.service.stats.batchWindow, false, '窗口外不自动触发')
+  assert.equal(appB.kernel.resolve('storage').all().filter((r) => r.mental_model).length, 0)
   assert.ok(appB.service.precompute() >= 1, '显式驱动不受窗口限制')
   appB.dispose()
 })

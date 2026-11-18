@@ -47,29 +47,71 @@ export function inMemorySync(): SyncProvider {
   }
 }
 
-/** 第二实现：游标/指纹持久化到内存快照，可导出再恢复（断点续传）。 */
+/**
+ * 第二实现：自包含状态 + 可序列化快照（真·断点续传）。
+ *
+ * 修复记录：旧版把 cursor / downstream / buffered / lagMs 委托给 inMemorySync 的闭包，
+ * restore() 只改了本地 state 对象，恢复后读到的仍是空状态；且按整批 accepted>0
+ * 判断会把 duplicate 项也写进快照。现在全部状态由本实现持有，逐条按指纹去重。
+ */
 export function resumableSync(): SyncProvider & { snapshot(): string; restore(raw: string): void } {
-  const base = inMemorySync()
-  const state = { cursors: {} as Record<string, SyncCursorState>, seen: {} as Record<string, string[]>, buffers: {} as Record<string, Buffered[]> }
+  let cursors = new Map<string, SyncCursorState>()
+  let seen = new Map<string, Set<string>>()
+  let buffers = new Map<string, Buffered[]>()
+  let lastAt = 0
+
   return {
     kind: 'resumable-cursor',
-    cursor: base.cursor,
-    ingest(input) {
-      const r = base.ingest(input)
-      state.cursors[input.sourceId] = r.cursor
-      state.seen[input.sourceId] = [...(state.seen[input.sourceId] ?? []), ...input.items.filter((i) => r.accepted > 0).map((i) => i.fingerprint)]
-      state.buffers[input.sourceId] = (state.buffers[input.sourceId] ?? []).concat(
-        input.items.map((i) => ({ ...i, watermark: input.watermark, at: Date.now() })),
-      )
-      return r
+    cursor(sourceId) { return cursors.get(sourceId) ?? null },
+    ingest({ sourceId, watermark, items }) {
+      const set = seen.get(sourceId) ?? new Set<string>()
+      const buf = buffers.get(sourceId) ?? []
+      let accepted = 0, duplicate = 0
+      let lastFingerprint = ''
+      for (const item of items) {
+        if (set.has(item.fingerprint)) { duplicate++; continue }
+        set.add(item.fingerprint)
+        buf.push({ fingerprint: item.fingerprint, content: item.content, watermark, at: Date.now() })
+        lastFingerprint = item.fingerprint
+        accepted++
+      }
+      seen.set(sourceId, set)
+      buffers.set(sourceId, buf)
+      lastAt = Date.now()
+      const cursor = makeCursor(sourceId, watermark, lastFingerprint, lastAt)
+      cursors.set(sourceId, cursor)
+      return { accepted, duplicate, cursor }
     },
-    downstream: base.downstream,
-    lagMs: base.lagMs,
-    buffered: base.buffered,
-    snapshot() { return JSON.stringify(state) },
+    downstream({ sourceId, since }) {
+      const all = buffers.get(sourceId) ?? []
+      const items = since ? all.filter((b) => b.watermark > since) : all
+      return {
+        items: items.map((b) => ({ fingerprint: b.fingerprint, content: b.content })),
+        cursor: cursors.get(sourceId) ?? null,
+      }
+    },
+    lagMs() { return lastAt ? Math.max(0, Date.now() - lastAt) : null },
+    buffered() { return [...buffers.values()].reduce((n, b) => n + b.length, 0) },
+
+    snapshot() {
+      return JSON.stringify({
+        cursors: Object.fromEntries(cursors),
+        seen: Object.fromEntries([...seen].map(([k, v]) => [k, [...v]])),
+        buffers: Object.fromEntries(buffers),
+        lastAt,
+      })
+    },
     restore(raw) {
-      const s = JSON.parse(raw)
-      state.cursors = s.cursors ?? {}; state.seen = s.seen ?? {}; state.buffers = s.buffers ?? {}
+      const s = JSON.parse(raw) as {
+        cursors?: Record<string, SyncCursorState>
+        seen?: Record<string, string[]>
+        buffers?: Record<string, Buffered[]>
+        lastAt?: number
+      }
+      cursors = new Map(Object.entries(s.cursors ?? {}) as Array<[string, SyncCursorState]>)
+      seen = new Map(Object.entries(s.seen ?? {}).map(([k, v]) => [k, new Set<string>(v)]))
+      buffers = new Map(Object.entries(s.buffers ?? {}) as Array<[string, Buffered[]]>)
+      lastAt = s.lastAt ?? 0
     },
   }
 }

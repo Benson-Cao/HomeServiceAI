@@ -2,10 +2,11 @@
 /**
  * 统一构建入口：定位 tsc 与 @types/node → 编译 → 复制 JSON 契约到 build/。
  *
- * 定位顺序（不依赖任何机器的全局安装状态）：
- *   1. 项目 node_modules/.bin/tsc（npm install 后的标准落点）
- *   2. 从项目根 createRequire 解析 typescript 包的 lib/tsc.js
- *   3. NODE_PATH / npm root -g 下的 typescript 包
+ * 只定位「可直接用 node 执行的 .js 入口」，跨平台一致：
+ *   1. createRequire 解析 typescript/lib/tsc.js
+ *   2. NODE_PATH / npm root -g 下的 typescript/lib/tsc.js
+ * 刻意不使用 node_modules/.bin/tsc —— 在 Windows 上那是 shell 脚本，
+ * 交给 node 执行会报 SyntaxError。
  * 产物：build/seams 与 build/src 下的 .js 文件，纯 ESM，运行时零依赖。
  */
 import { execFileSync } from 'node:child_process'
@@ -21,20 +22,15 @@ function tryResolve(pkgJson) {
   try { return dirname(req.resolve(pkgJson)) } catch { return null }
 }
 
-/** 找到可直接用 node 执行的 tsc.js 入口。 */
+/** 只返回 .js 入口；绝不返回 .bin 脚本（Windows 上那是 shell 脚本）。 */
 function locateTsc() {
-  const localBin = join(ROOT, 'node_modules', '.bin', 'tsc')
-  if (existsSync(localBin)) return { cmd: localBin, label: 'local .bin' }
+  try {
+    const entry = req.resolve('typescript/lib/tsc.js')
+    if (existsSync(entry) && entry.endsWith('.js')) return { cmd: entry, label: 'typescript/lib/tsc.js' }
+  } catch { /* 本地未安装，继续找全局 */ }
 
-  const libDir = tryResolve('typescript/package.json')
-  if (libDir) {
-    const entry = join(libDir, 'lib', 'tsc.js')
-    if (existsSync(entry)) return { cmd: entry, label: 'resolved typescript' }
-    const bin = join(libDir, 'bin', 'tsc')
-    if (existsSync(bin)) return { cmd: bin, label: 'resolved typescript bin' }
-  }
-
-  for (const base of (process.env.NODE_PATH ?? '').split(':').filter(Boolean)) {
+  const sep = process.platform === 'win32' ? ';' : ':'
+  for (const base of (process.env.NODE_PATH ?? '').split(sep).filter(Boolean)) {
     const entry = join(base, 'typescript', 'lib', 'tsc.js')
     if (existsSync(entry)) return { cmd: entry, label: 'NODE_PATH' }
   }
@@ -54,7 +50,7 @@ function locateTypeRoots() {
   if (existsSync(local)) roots.push(local)
   const nodeTypes = tryResolve('@types/node/package.json')
   if (nodeTypes) roots.push(dirname(nodeTypes))
-  for (const base of (process.env.NODE_PATH ?? '').split(':').filter(Boolean)) {
+  for (const base of (process.env.NODE_PATH ?? '').split(process.platform === 'win32' ? ';' : ':').filter(Boolean)) {
     const t = join(base, '@types')
     if (existsSync(t)) roots.push(t)
   }

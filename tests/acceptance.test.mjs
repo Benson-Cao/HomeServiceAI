@@ -80,7 +80,7 @@ test('ⓒ 语义② 跨 bank 检索被拒；kid 只读生效（不降级，内�
   assert.ok(childRead.items.length > 0, 'kid 只读共享可读')
 
   assert.equal(app.kernel.authorize('', 'b1', 'recall'), false)
-  assert.equal(app.kernel.authorize('u1', 'b1', 'reflect'), false, 'V0.5 不实现 reflect')
+  assert.equal(app.kernel.authorize('u1', 'b1', 'reflect'), false, 'Reflect 已实现，但 authorize 仍由 L2 策略裁决（该策略不放行）')
   app.dispose()
 })
 

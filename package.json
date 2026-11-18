@@ -8,6 +8,7 @@
   "files": [
     "seams/",
     "src/",
+    "build/",
     "ci/",
     "docs/",
     "tests/",
@@ -17,15 +18,21 @@
     "README.md"
   ],
   "scripts": {
+    "pretest": "npm run build",
+    "preacceptance": "npm run build",
+    "pregovernance": "npm run build",
+    "prestack": "npm run build",
+    "predump:tree": "npm run build",
+    "prepack": "npm run build",
     "build": "node ci/build.mjs",
     "check:schemas": "node ci/check-schemas.mjs",
     "check:kernel": "node ci/kernel-purity.mjs --dir src/kernel",
     "test": "node --test tests/*.test.mjs",
-    "dump:tree": "node build/src/kernel/cli.js --dump-tree",
-    "acceptance": "node --test tests/acceptance.test.mjs   # 单独跑 12 项验收；npm test 已包含",
-    "verify": "npm run check:schemas && npm run build && npm run check:kernel && npm test",
+    "verify": "npm run check:schemas && npm run check:kernel && npm test",
+    "acceptance": "node --test tests/acceptance.test.mjs",
     "governance": "node --test tests/governance.test.mjs",
-    "stack": "node --test tests/v07-full-stack.test.mjs"
+    "stack": "node --test tests/v07-full-stack.test.mjs",
+    "dump:tree": "node build/src/kernel/cli.js --dump-tree"
   },
   "engines": {
     "node": ">=18"

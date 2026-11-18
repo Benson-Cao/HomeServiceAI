@@ -1,6 +1,6 @@
 # Memory Harness · Contracts + Kernel
 
-> 插件化记忆运行底盘的**契约仓库 + L1 微内核 + V0.5 最小闭环**。
+> 插件化记忆运行底盘的**契约仓库 + L1 微内核 + V0.7 全栈闭环**。
 > 基线：架构图 v1.2 · ADR v1.3（含 ADR-006）· `CONTRACT_VERSION = 1.2.0` · **V0.7：32 个 L2 seam 全部真实实现，无 stub / deferred**（A 档，不动契约）。
 
 ## 语言与编译链（ADR-006）
@@ -20,20 +20,18 @@ src/providers/  默认 provider 候选：32 个 seam 全覆盖，关键 seam 各
 src/pipeline/   词汇与溯源类型、7 字段 Provenance
 src/scenes/     场景插件（唯一一份，只认 seam id，不含任何 provider 名）
 src/profiles/   两份装配清单：结构相同，仅 provider 实现不同
-src/runtime/    assemble + V0.5 降级桩
-tests/          node --test：内核 15 / 换 provider 4 / 横切验收 12 / 治理 7 / 全栈 11 = 49 项
+tests/          node --test：内核 15 / 换 provider 4 / 横切 12 / 治理 7 / 全栈 11 / 评审回归 7 = 56 项
 ci/             build wrapper / schema 校验 / 内核破功静态检查
 src/runtime/    assemble（32 seam 全量装配）
-docs/           V0.5 降级验收集 + ADR.md（v1.3，含 ADR-006）
+docs/           验收集 + ADR.md（v1.3，含 ADR-006）
 ```
 
 ## 命令
 
 ```bash
-npm install          # 构建期依赖（typescript + @types/node）
-# 注：仓库已随包提供 build/ 产物；只跑 npm test 无需安装。改过 .ts 源码才需要 npm install 重新编译。
-npm run verify       # 一次跑完：schema → tsc build → 内核纯度 → 单测 → 横切验收
-npm test             # 49 项单测（全量）
+npm install          # 首次：装构建期依赖（typescript + @types/node）
+npm run verify       # 一次跑完：schema → 内核纯度 → 单测（pretest 自动先 tsc 构建）
+npm test             # 56 项单测；pretest 自动构建，不依赖仓库里是否已有 build/
 npm run acceptance   # 只跑 12 项横切验收
 npm run governance   # 只跑 7 项冲突与过期治理专项
 npm run stack        # 只跑 11 项 V0.7 全栈专项
@@ -66,5 +64,12 @@ MIT
 - 增量同步：水位线、指纹去重、断点续传、lag 可观测；端侧只缓冲不裁决
 - ABAC 全量属性：角色 / 敏感度 / 设备可信度 / 时间窗口，执行点仍在 L2，profile 不授权
 - defense 默认开启（脱敏）、审计、批处理窗口、Reflect、心智模型预计算、外围接入（source / agent-adapter / ui / transport / ocr）
+- **口径澄清**：32 个 seam 全部装配真实 provider、全部可 `resolve` 且有行为验收（ⓘ）；其中 **26 个进入 retain / recall / sync 主链路**，`source` / `agent-adapter` / `ui` / `transport` / `ocr` / `model-router` 这 6 个是外围接入契约，由外部消费方调用，不作为场景插件内部依赖使用。场景插件 `inject` 全部 32 个是把它们作为依赖门槛，不等于都在主链路里被 `ctx.use`。
 
 **仍是 A 档**：未动 `seams/*.ts`、未动 schema、`CONTRACT_VERSION` 仍 `1.2.0`、架构图 v1.2 不动、未开新 ADR。判据见 `CONTRACTS.md`「变更分档与判据」与「V0.7 A 档实践记录」。
+
+## 构建与平台
+
+仓库**不提交 `build/`**（`.gitignore` 忽略）。所有入口都由 npm 生命周期钩子自动构建：`pretest` / `preacceptance` / `pregovernance` / `prestack` / `predump:tree` / `prepack`，所以 `git clone → npm install → npm test` 与 `npm pack` 都不会因缺产物而失败。构建只定位 `typescript/lib/tsc.js` 纯 JS 入口，不使用平台相关的 `.bin/tsc` 脚本。
+
+CI 跑 `matrix.os: [ubuntu-latest, windows-latest]`。本地沙盒仅 Linux 验证；Windows 由 Actions 覆盖。

@@ -1,6 +1,12 @@
 import type { MemoryRecord, ConsolidatorProvider, ConsolidationResult } from '../pipeline/types.js'
 
-/** 主题键：同 bank + principal + scene 视为同一事实域；内容指纹相同即同一断言。 */
+/**
+ * 主题键：同 bank + principal + scene 视为同一事实域。
+ * 同一断言判据统一用 normalized() —— 不用 dedupe_fingerprint。
+ * 修复记录：旧版「相同性」看原始指纹、「冲突」看归一化文本，导致
+ * "Hello  World" vs "hello world" 被判为 new，产生重复记忆而非证据累积。
+ * dedupe_fingerprint 仍保留在记录上，供同步/溯源使用，不参与断言等价判定。
+ */
 export function subjectKey(r: MemoryRecord): string {
   return `${r.bank_id}|${r.principal}|${r.scene ?? ''}`
 }
@@ -15,7 +21,7 @@ export function evidenceCountConsolidator(): ConsolidatorProvider {
     kind: 'evidence-count',
     integrate({ record, existing }): ConsolidationResult {
       const peers = existing.filter((r) => r.state !== 'archived' && subjectKey(r) === subjectKey(record))
-      const identical = peers.find((r) => r.dedupe_fingerprint === record.dedupe_fingerprint)
+      const identical = peers.find((r) => normalized(r) === normalized(record))
       if (identical) {
         const e = identical.provenance?.evidence
         const proofCount = (e?.proof_count ?? 0) + 1
@@ -41,7 +47,7 @@ export function confidenceRevisionConsolidator(): ConsolidatorProvider {
     kind: 'confidence-revision',
     integrate({ record, existing }): ConsolidationResult {
       const peers = existing.filter((r) => r.state !== 'archived' && subjectKey(r) === subjectKey(record))
-      const identical = peers.find((r) => r.dedupe_fingerprint === record.dedupe_fingerprint)
+      const identical = peers.find((r) => normalized(r) === normalized(record))
       if (identical) {
         const e = identical.provenance?.evidence
         const proofCount = (e?.proof_count ?? 0) + 1

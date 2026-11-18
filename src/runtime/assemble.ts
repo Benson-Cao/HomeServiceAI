@@ -12,9 +12,7 @@ export interface Assembled {
 }
 
 /** 同一份场景插件挂到任意 profile 上 —— 换 provider 不改场景代码。 */
-export interface AssembleOptions { withStubs?: boolean }
-
-export function assemble(profile: Profile, _options: AssembleOptions = {}): Assembled {
+export function assemble(profile: Profile): Assembled {
   const kernel = createKernel()
   const created: unknown[] = []
 
@@ -28,8 +26,6 @@ export function assemble(profile: Profile, _options: AssembleOptions = {}): Asse
       },
     })
   }
-
-  // V0.7：全部 L2 seam 已由 profile 装配真实 provider，V0.5 桩整体退役。
 
   let service: MemoryService | null = null
   kernel.plugin(createMemoryScene((s) => { service = s }))
