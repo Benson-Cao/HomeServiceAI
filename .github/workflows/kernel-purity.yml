@@ -21,7 +21,7 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: install build toolchain
         run: npm install --no-audit --no-fund
-      - name: contracts + kernel + V0.7 acceptance (pretest auto-builds)
+      - name: contracts + kernel + V0.8 acceptance (pretest auto-builds)
         run: npm run verify
       - name: dump-tree diagnostics
         run: npm run dump:tree
