@@ -1,0 +1,14 @@
+node_modules/
+build/
+.git/
+.env
+.env.*
+!.env.example
+backups/
+*.log
+tsconfig.build.json
+lib/
+bin/
+dist/
+*.zip
+.DS_Store

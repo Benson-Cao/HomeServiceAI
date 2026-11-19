@@ -8,7 +8,8 @@ export function simplePolicy(): PolicyProvider {
   return {
     evaluate({ principal, bank, operation }) {
       if (!principal || !bank) return false
-      if (operation === 'reflect') return false // V0.5 不实现
+      // reflect 不是独立的授权操作：场景插件内部先走 recall 的三元组校验。
+      if (operation === 'reflect') return false
       if (operation !== 'retain' && operation !== 'recall') return false
       if (bank === 'kid') {
         // kid 只读共享给家长：只有 parent 可写；child 可读

@@ -1,0 +1,54 @@
+name: 新能力 / 新 provider
+description: 加真实模型、采集器、前端、检索引擎等
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前先判分档。绝大多数「加能力」都是 **A 档**：填既有 seam，不动契约、不升版本、不开 ADR、不改架构图。
+  - type: dropdown
+    id: tier
+    attributes:
+      label: 你认为属于哪一档
+      description: 判据看 git diff 落点，见 CONTRACTS.md
+      options:
+        - "A 档 · 填充既有 seam（最常见）"
+        - "B 档 · 新增 seam / 可选字段 / profile（MINOR）"
+        - "C 档 · 改语义 / 单文件安装包（须先写 ADR）"
+        - 不确定，想先讨论
+    validations:
+      required: true
+  - type: input
+    id: seam
+    attributes:
+      label: 要填的既有 seam id
+      description: 例如 storage / llm / retriever.semantic / source / ui
+      placeholder: "retriever.semantic"
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: 解决什么问题
+      description: 一句话说清使用者视角的价值，别写「为了对齐架构图」
+    validations:
+      required: true
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: 已确认
+      options:
+        - label: 不会改 src/kernel/ 或 src/scenes/memory-scene.ts
+          required: true
+        - label: 单测用 mock / fake fetch，不发真实网络、不连真实 DB
+          required: true
+        - label: 新实现名会补进 provider-swap 禁用词表
+          required: true
+  - type: textarea
+    id: external
+    attributes:
+      label: 需要外部服务吗（可选）
+      description: |
+        若需要，说明端点形态与凭据存放方式。密钥只放本地 .env / 环境变量，
+        **不要贴进 Issue、不要放进 GitHub Secrets 之外的明文位置**。

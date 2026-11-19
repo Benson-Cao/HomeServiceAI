@@ -1,0 +1,54 @@
+name: 缺陷报告
+description: 跑挂了、行为不对、跨平台不一致
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先跑一次 `npm run verify` 并把**汇总输出**贴上来。汇总没打印不算通过（曾因 build 静默失败被空输出糊过去）。
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: OS / Node 版本 / 是否容器 / 是否 Windows
+      placeholder: "Windows 11 · Node 22.22.2 · 宿主机直跑"
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 命令 + 期望 + 实际输出（贴汇总，不要只说「挂了」）
+      placeholder: |
+        1. npm run verify
+        2. 期望：116/116
+        3. 实际：...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及哪一层
+      options:
+        - 契约 / schema / 版本
+        - L1 内核（依赖 / 事件 / 鉴权）
+        - provider 实现
+        - 记忆治理（冲突 / 过期 / 降质）
+        - L0 部署 / compose / 备份
+        - ② 真模型 / ③ 常驻服务 / ④ 身份审计
+        - 文档 / 口径不一致
+    validations:
+      required: true
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: 是否可能涉及契约语义
+      options:
+        - label: 是 —— 可能是 B/C 档，先别直接改代码，等 ADR
+          required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: 日志 / 截图（可选）
+      description: 不要贴任何 token、密钥、真实个人数据

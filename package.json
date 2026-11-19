@@ -13,8 +13,17 @@
     "docs/",
     "tests/",
     "examples/",
+    "scripts/",
+    "config/",
+    "docker/",
     ".github/",
+    "Dockerfile",
+    "docker-compose.yml",
+    ".dockerignore",
+    ".env.example",
     "CONTRACTS.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
     "README.md"
   ],
   "scripts": {
@@ -32,7 +41,16 @@
     "acceptance": "node --test tests/acceptance.test.mjs",
     "governance": "node --test tests/governance.test.mjs",
     "stack": "node --test tests/v07-full-stack.test.mjs",
-    "dump:tree": "node build/src/kernel/cli.js --dump-tree"
+    "dump:tree": "node build/src/kernel/cli.js --dump-tree",
+    "smoke:stack": "node scripts/smoke-stack.mjs",
+    "smoke:llm": "node scripts/smoke-llm.mjs",
+    "smoke:daemon": "node scripts/smoke-daemon.mjs",
+    "token:issue": "node scripts/issue-token.mjs",
+    "audit:recent": "node scripts/audit-query.mjs",
+    "push:deferred": "node scripts/deferred-push.mjs",
+    "db:backup": "node scripts/db-backup.mjs",
+    "db:restore": "node scripts/db-restore.mjs",
+    "compose:config": "docker compose config -q"
   },
   "engines": {
     "node": ">=18"
@@ -40,5 +58,8 @@
   "devDependencies": {
     "@types/node": "^20.14.10",
     "typescript": "^5.6.3"
+  },
+  "optionalDependencies": {
+    "pg": "^8.13.1"
   }
 }

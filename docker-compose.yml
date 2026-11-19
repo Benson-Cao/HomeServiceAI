@@ -1,0 +1,65 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
+      POSTGRES_DB: ${POSTGRES_DB:-memory_harness}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mh} -d ${POSTGRES_DB:-memory_harness}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  # ③ app 已是常驻 REST 服务：单写进程持有 L0 内存镜像，
+  # 后台 worker 定时 drain + flush。不要同时跑 l0-cli 写容器，见 docs/DAEMON.md。
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MH_IN_CONTAINER: "1"
+      MH_PG_DSN: ${MH_PG_DSN:-postgres://mh:change-me-in-production@db:5432/memory_harness}
+      MH_HTTP_HOST: 0.0.0.0
+      # 容器内部固定 8080；宿主机映射端口用 MH_HTTP_HOST_PORT 单独控制，避免两边不一致。
+      MH_HTTP_PORT: "8080"
+      MH_WORKER_INTERVAL_MS: ${MH_WORKER_INTERVAL_MS:-1000}
+      MH_HTTP_TOKEN: ${MH_HTTP_TOKEN:-}
+      # ④ 身份（推荐）：填了 MH_IDENTITY_SECRET 就用成员 token，忽略 MH_HTTP_TOKEN
+      MH_IDENTITY_SECRET: ${MH_IDENTITY_SECRET:-}
+      MH_MEMBERS_FILE: ${MH_MEMBERS_FILE:-/app/config/members.json}
+      MH_MEMBERS: ${MH_MEMBERS:-}
+      MH_TOKEN_TTL_SECONDS: ${MH_TOKEN_TTL_SECONDS:-2592000}
+      # ② 真模型（可选）：留空则用确定性桩，不发网络。
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_TIMEOUT_MS: ${DEEPSEEK_TIMEOUT_MS:-20000}
+      LLM_LOCAL_ENDPOINT: ${LLM_LOCAL_ENDPOINT:-}
+      LLM_LOCAL_MODEL: ${LLM_LOCAL_MODEL:-}
+    ports:
+      - "${MH_HTTP_HOST_PORT:-8080}:8080"
+    volumes:
+      - ./backups:/app/backups
+      # 目录挂载（不是单文件）：config/ 一定存在，members.json 可后补，不会挡住启动
+      - ./config:/app/config:ro
+    command: ["node", "examples/daemon.mjs"]
+    healthcheck:
+      # /health 豁免 Bearer 校验，专供容器健康检查。
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+volumes:
+  pgdata:

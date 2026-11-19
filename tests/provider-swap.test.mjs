@@ -27,6 +27,14 @@ test('Ⓐ 静态证明：场景插件源码不含任何 provider 名 / 场景名
     'nightBatchScheduler', 'alwaysOnScheduler', 'memoryVector', 'sentenceExtractor',
     'dedupeIngest', 'neutralModelRouter', 'boundedWorker', 'inMemoryAudit', 'defaultBankPolicy',
     'health', 'kid', 'work.profile', 'home.profile',
+    'deepseekLlm', 'localGatewayLlm', 'openAiCompatibleLlm', 'DeepSeek',
+    'DEEPSEEK_ENDPOINT', 'deepseek-flash', 'cloudProfile', 'localGatewayProfile',
+    'reflectWithModel', 'Ollama', 'vLLM', 'LM Studio',
+    'createDaemon', 'daemonProfile', 'createWorkerLoop', 'profile-daemon',
+    'node:http', 'smoke-daemon', 'MH_HTTP_TOKEN',
+    'createIdentityGate', 'directoryPolicy', 'issueToken', 'verifyToken',
+    'pgAudit', 'memory_audit_log', 'MH_IDENTITY_SECRET', 'members.example',
+    'token:issue', 'audit:recent',
   ]
   const hit = forbidden.filter((w) => src.includes(w))
   assert.deepEqual(hit, [], `场景插件不应知道具体实现：${hit.join(', ')}`)

@@ -1,0 +1,23 @@
+{
+  "members": [
+    {
+      "sub": "parent",
+      "role": "parent",
+      "banks": ["home", "work", "health", "kid"],
+      "devices": ["laptop-parent", "phone-parent"]
+    },
+    {
+      "sub": "child",
+      "role": "child",
+      "banks": ["home", "kid"],
+      "devices": ["tablet-kid"]
+    }
+  ],
+  "banks": {
+    "home":   { "sensitivity": "family",  "owner": "parent" },
+    "work":   { "sensitivity": "private", "owner": "parent" },
+    "health": { "sensitivity": "private", "owner": "parent" },
+    "kid":    { "sensitivity": "family",  "owner": "parent", "windowStart": "06:00", "windowEnd": "21:00" }
+  },
+  "trustedDevices": ["laptop-parent", "phone-parent", "tablet-kid"]
+}
