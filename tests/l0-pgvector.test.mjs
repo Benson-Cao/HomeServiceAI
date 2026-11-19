@@ -46,7 +46,9 @@ function sampleRecord(overrides = {}) {
 }
 
 test('① DDL 唯一源：TS 常量与 initdb 文件逐字一致，维度与 EMBEDDING_DIM 对齐', () => {
-  const file = readFileSync(join(ROOT, 'docker/initdb/01-schema.sql'), 'utf8').trim()
+  const file = readFileSync(join(ROOT, 'docker/initdb/01-schema.sql'), 'utf8')
+    .replace(/\r\n/g, '\n') // CRLF checkout 归一化：tsc 产出的 SCHEMA_SQL 恒为 LF
+    .trim()
   assert.equal(SCHEMA_SQL.trim(), file)
   assert.match(file, /CREATE EXTENSION IF NOT EXISTS vector/)
   assert.match(file, /IF NOT EXISTS/g)

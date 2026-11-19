@@ -204,6 +204,7 @@ test('⑩ pgAudit：flush 失败保留缓冲，下次 tick 重试成功', async 
 
 test('⑪ DDL 同源：审计表在 SCHEMA_SQL 与 initdb 里逐字一致', () => {
   const initdb = readFileSync(new URL('../docker/initdb/01-schema.sql', import.meta.url), 'utf8')
+    .replace(/\r\n/g, '\n') // CRLF checkout 归一化：tsc 产出的 SCHEMA_SQL 恒为 LF
   assert.equal(SCHEMA_SQL, initdb)
   assert.match(initdb, /CREATE TABLE IF NOT EXISTS memory_audit_log/)
   assert.match(initdb, /idx_memory_audit_principal_bank/)
