@@ -36,7 +36,7 @@
     "build": "node ci/build.mjs",
     "check:schemas": "node ci/check-schemas.mjs",
     "check:kernel": "node ci/kernel-purity.mjs --dir src/kernel",
-    "test": "node --test tests/",
+    "test": "node --test",
     "verify": "npm run check:schemas && npm run check:kernel && npm test",
     "acceptance": "node --test tests/acceptance.test.mjs",
     "governance": "node --test tests/governance.test.mjs",
